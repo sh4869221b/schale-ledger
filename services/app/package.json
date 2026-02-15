@@ -7,8 +7,8 @@
     "build": "svelte-kit sync && vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "deploy:dev": "bun run build && wrangler pages deploy .svelte-kit/cloudflare --config wrangler.dev.jsonc --branch dev",
-    "deploy:prod": "bun run build && wrangler pages deploy .svelte-kit/cloudflare --config wrangler.prod.jsonc"
+    "deploy:dev": "bun run build && cp wrangler.dev.jsonc wrangler.jsonc && wrangler pages deploy .svelte-kit/cloudflare --branch dev",
+    "deploy:prod": "bun run build && cp wrangler.prod.jsonc wrangler.jsonc && wrangler pages deploy .svelte-kit/cloudflare"
   },
   "dependencies": {
     "@schale-ledger/application": "workspace:*",

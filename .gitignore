@@ -2,6 +2,7 @@ node_modules
 .bun
 .svelte-kit
 .wrangler
+services/app/wrangler.jsonc
 .env
 .env.*
 !.env.example
