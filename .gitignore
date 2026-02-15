@@ -1,0 +1,11 @@
+node_modules
+.bun
+.svelte-kit
+.wrangler
+.env
+.env.*
+!.env.example
+key
+coverage
+*.log
+.DS_Store

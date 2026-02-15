@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "schale-ledger-prod",
+  "pages_build_output_dir": "./.svelte-kit/cloudflare",
+  "compatibility_date": "2026-02-15",
+  "compatibility_flags": [
+    "nodejs_compat_v2"
+  ],
+  "vars": {
+    "APP_ENV": "production"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "00000000-0000-4000-8000-000000000001"
+    }
+  ]
+}

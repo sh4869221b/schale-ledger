@@ -1,0 +1,31 @@
+{
+  "name": "@schale-ledger/app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "svelte-kit sync && vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "deploy:dev": "bun run build && wrangler pages deploy .svelte-kit/cloudflare --config wrangler.dev.jsonc --branch dev",
+    "deploy:prod": "bun run build && wrangler pages deploy .svelte-kit/cloudflare --config wrangler.prod.jsonc"
+  },
+  "dependencies": {
+    "@schale-ledger/application": "workspace:*",
+    "@schale-ledger/contracts": "workspace:*",
+    "@schale-ledger/infrastructure": "workspace:*",
+    "@sveltejs/adapter-cloudflare": "latest",
+    "@sveltejs/kit": "latest",
+    "drizzle-orm": "^0.44.7",
+    "pg": "^8.16.3",
+    "svelte": "latest",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "latest",
+    "svelte-check": "latest",
+    "typescript": "^5.9.3",
+    "vite": "latest",
+    "wrangler": "^4.65.0"
+  }
+}
