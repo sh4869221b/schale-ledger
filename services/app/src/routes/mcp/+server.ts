@@ -2,6 +2,7 @@ import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { createRequestContext } from "$lib/server/context";
 import { normalizeError } from "$lib/server/errors";
+import { withDbRetry } from "$lib/server/retry";
 import { executeMcpToolCall, mcpInitializeResult, mcpToolsListResult, type JsonRpcRequest, type JsonRpcResponse } from "$lib/server/mcp";
 
 function jsonRpcResult(id: JsonRpcResponse["id"], result: unknown): JsonRpcResponse {
@@ -67,10 +68,13 @@ export const POST: RequestHandler = async (event) => {
     if (typeof params.name !== "string") {
       return json(jsonRpcError(id, -32602, "Invalid params", { reason: "name is required" }));
     }
+    const toolName = params.name;
 
     try {
-      const { service, userId } = await createRequestContext(event);
-      const result = await executeMcpToolCall(service, userId, params.name, params.arguments ?? {});
+      const result = await withDbRetry(async () => {
+        const { service, userId } = await createRequestContext(event);
+        return executeMcpToolCall(service, userId, toolName, params.arguments ?? {});
+      });
       return json(jsonRpcResult(id, result));
     } catch (error) {
       const normalized = normalizeError(error);

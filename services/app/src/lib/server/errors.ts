@@ -12,6 +12,34 @@ export interface ErrorResponseShape {
   body: ApiError;
 }
 
+function formatUnknownReason(error: unknown): string {
+  if (error instanceof Error) {
+    const base = error.message;
+    const cause = (error as { cause?: unknown }).cause;
+
+    if (cause && typeof cause === "object") {
+      const causeCode = (cause as { code?: unknown }).code;
+      const causeMessage = (cause as { message?: unknown }).message;
+      const codeText = typeof causeCode === "string" ? causeCode : null;
+      const messageText = typeof causeMessage === "string" ? causeMessage : null;
+
+      if (codeText && messageText) {
+        return `${base} (cause: ${codeText} ${messageText})`;
+      }
+      if (messageText) {
+        return `${base} (cause: ${messageText})`;
+      }
+      if (codeText) {
+        return `${base} (cause: ${codeText})`;
+      }
+    }
+
+    return base;
+  }
+
+  return "unknown";
+}
+
 export function normalizeError(error: unknown): ErrorResponseShape {
   if (error instanceof ValidationError) {
     return {
@@ -74,7 +102,7 @@ export function normalizeError(error: unknown): ErrorResponseShape {
       code: ERROR_CODE.internal,
       message: "システムエラーが発生しました",
       details: {
-        reason: error instanceof Error ? error.message : "unknown"
+        reason: formatUnknownReason(error)
       }
     }
   };

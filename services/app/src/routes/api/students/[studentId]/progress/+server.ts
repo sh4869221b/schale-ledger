@@ -2,6 +2,7 @@ import { json } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
 import { createRequestContext } from "$lib/server/context";
 import { normalizeError } from "$lib/server/errors";
+import { withDbRetry } from "$lib/server/retry";
 import { progressPatchSchema } from "$lib/server/validation";
 import { ValidationError } from "@schale-ledger/application";
 
@@ -15,8 +16,10 @@ export const PUT: RequestHandler = async (event) => {
       });
     }
 
-    const { service, userId } = await createRequestContext(event);
-    const detail = await service.upsertStudentProgress(userId, event.params.studentId, parsed.data);
+    const detail = await withDbRetry(async () => {
+      const { service, userId } = await createRequestContext(event);
+      return service.upsertStudentProgress(userId, event.params.studentId, parsed.data);
+    });
     return json(detail);
   } catch (error) {
     const normalized = normalizeError(error);
