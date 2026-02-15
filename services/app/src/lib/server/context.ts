@@ -31,7 +31,23 @@ export async function createRequestContext(event: RequestEvent): Promise<{
   const infra = createInfrastructure({ connectionString });
 
   const identity = resolveExternalIdentity(event.request.headers);
-  const user = (await infra.userRepository.findByExternalIdentity(identity)) ?? (await infra.userRepository.create(identity));
+  let user = await infra.userRepository.findByExternalIdentity(identity);
+  if (!user) {
+    try {
+      user = await infra.userRepository.create(identity);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      if (code === "23505") {
+        user = await infra.userRepository.findByExternalIdentity(identity);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!user) {
+    throw new InternalError("ユーザー情報の初期化に失敗しました");
+  }
 
   return {
     service: new LedgerService(infra),

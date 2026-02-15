@@ -38,7 +38,20 @@ function getPool(connectionString: string): Pool {
     return cached;
   }
 
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({
+    connectionString,
+    // Cloudflare Workers runtime can be sensitive to long-lived idle sockets.
+    // Keep the pool small and avoid crashing the process on background socket errors.
+    max: 1,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 10_000
+  });
+  pool.on("error", (error) => {
+    console.error("postgres_pool_error", {
+      message: error.message,
+      name: error.name
+    });
+  });
   poolCache.set(connectionString, pool);
   return pool;
 }
