@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "schale-ledger-web",
+  "name": "schale-ledger",
   "main": ".svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2026-04-10",
   "compatibility_flags": [
@@ -10,62 +10,28 @@
     "binding": "ASSETS",
     "directory": ".svelte-kit/cloudflare"
   },
-  "vars": {
-    "CF_ACCESS_AUD": "replace-me",
-    "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com",
-    "SESSION_COOKIE_SECRET": "replace-me-session-secret"
-  },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "schale-ledger-dev",
-      "database_id": "00000000-0000-0000-0000-000000000001",
+      "database_name": "schale-ledger-prod",
+      "database_id": "a0ee259b-2faa-4c24-ade2-5a81480b06c3",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
   "env": {
     "dev": {
-      "name": "schale-ledger-web-dev",
       "compatibility_flags": [
         "nodejs_als"
       ],
       "assets": {
         "binding": "ASSETS",
         "directory": ".svelte-kit/cloudflare"
-      },
-      "vars": {
-        "CF_ACCESS_AUD": "replace-me-dev",
-        "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com",
-        "SESSION_COOKIE_SECRET": "replace-me-dev-session-secret"
       },
       "d1_databases": [
         {
           "binding": "DB",
           "database_name": "schale-ledger-dev",
-          "database_id": "00000000-0000-0000-0000-000000000001",
-          "migrations_dir": "../../packages/db/migrations"
-        }
-      ]
-    },
-    "prod": {
-      "name": "schale-ledger-web-prod",
-      "compatibility_flags": [
-        "nodejs_als"
-      ],
-      "assets": {
-        "binding": "ASSETS",
-        "directory": ".svelte-kit/cloudflare"
-      },
-      "vars": {
-        "CF_ACCESS_AUD": "replace-me-prod",
-        "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com",
-        "SESSION_COOKIE_SECRET": "replace-me-prod-session-secret"
-      },
-      "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "schale-ledger-prod",
-          "database_id": "00000000-0000-0000-0000-000000000002",
+          "database_id": "face9d77-b51b-41b0-9f48-7ed41579d343",
           "migrations_dir": "../../packages/db/migrations"
         }
       ]
