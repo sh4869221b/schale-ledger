@@ -3,33 +3,61 @@
 </svelte:head>
 
 <script lang="ts">
-  import { Badge, Button, Card, StatCard } from "@schale-ledger/ui";
+  import { Badge, Card, StatCard } from "@schale-ledger/ui";
+  import type { PageData } from "./$types";
 
-  const message = "Workers + D1 migration in progress";
+  export let data: PageData;
+
+  const pageData = data as {
+    dashboard: null | {
+      cards: Array<{ label: string; value: string; description: string }>;
+      recentTeams: Array<{ teamId: string; name: string; mode: string; memo: string; updatedAt: string }>;
+      attentionItems: Array<{ label: string; value: string }>;
+    };
+  };
 </script>
 
-<main class="min-h-screen bg-[var(--color-background)] text-[var(--color-foreground)]">
-  <section class="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">
-    <div class="flex items-center justify-between gap-4">
-      <div class="space-y-2">
-        <Badge>Mission Control</Badge>
-        <h1 class="text-4xl font-semibold tracking-tight">Schale Ledger</h1>
-        <p class="max-w-2xl text-sm text-[var(--color-muted-foreground)]">{message}</p>
-      </div>
-
-      <Button>Open dashboard</Button>
+<section class="flex flex-col gap-6">
+    <div class="space-y-2">
+      <Badge>Mission Control</Badge>
+      <h2 class="text-3xl font-semibold tracking-tight">Dashboard</h2>
+      <p class="text-sm text-[var(--color-muted-foreground)]">Overview of roster, teams, and follow-up work.</p>
     </div>
 
     <div class="grid gap-4 md:grid-cols-3">
-      <StatCard label="Students" value="0" description="Imported roster will appear here" />
-      <StatCard label="Teams" value="0" description="Saved teams will appear here" />
-      <StatCard label="Readiness" value="WIP" description="UI primitives are now wired into the app" />
+      {#each pageData.dashboard?.cards ?? [] as card}
+        <StatCard label={card.label} value={card.value} description={card.description} />
+      {/each}
     </div>
 
-    <Card title="Scaffold status" description="Tailwind v4 and the shared UI package are connected.">
-      <p class="text-sm text-[var(--color-muted-foreground)]">
-        Next tasks will replace this placeholder with dashboard data, auth, and D1-backed features.
-      </p>
-    </Card>
-  </section>
-</main>
+    <div class="grid gap-4 xl:grid-cols-[2fr_1fr]">
+      <Card title="Recent teams" description="Most recently updated formations for this operator.">
+        {#if (pageData.dashboard?.recentTeams ?? []).length === 0}
+          <p class="text-sm text-[var(--color-muted-foreground)]">No teams saved yet.</p>
+        {:else}
+          <div class="space-y-3">
+            {#each pageData.dashboard?.recentTeams ?? [] as team}
+              <div class="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
+                <div>
+                  <p class="font-medium">{team.name}</p>
+                  <p class="text-sm text-[var(--color-muted-foreground)]">{team.mode} · {team.updatedAt}</p>
+                </div>
+                <span class="text-sm text-[var(--color-muted-foreground)]">Teams view coming soon</span>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </Card>
+
+      <Card title="Attention" description="Short list of follow-up items.">
+        <div class="space-y-3">
+          {#each pageData.dashboard?.attentionItems ?? [] as item}
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
+              <p class="font-medium">{item.label}</p>
+              <p class="text-sm text-[var(--color-muted-foreground)]">{item.value}</p>
+            </div>
+          {/each}
+        </div>
+      </Card>
+    </div>
+</section>

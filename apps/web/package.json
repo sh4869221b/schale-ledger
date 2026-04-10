@@ -11,6 +11,7 @@
     "deploy:prod": "bun run build && wrangler deploy --env prod"
   },
   "dependencies": {
+    "@schale-ledger/core": "workspace:*",
     "@schale-ledger/db": "workspace:*",
     "@schale-ledger/ui": "workspace:*",
     "@sveltejs/adapter-cloudflare": "latest",
