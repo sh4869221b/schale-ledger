@@ -3,7 +3,7 @@ import type { LayoutServerLoad } from "./$types";
 
 const navigation = [
   { href: "/", label: "Dashboard", enabled: true },
-  { href: "/students", label: "Students", enabled: false },
+  { href: "/students", label: "Students", enabled: true },
   { href: "/teams", label: "Teams", enabled: false }
 ];
 
