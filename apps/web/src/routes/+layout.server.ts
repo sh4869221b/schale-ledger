@@ -4,7 +4,7 @@ import type { LayoutServerLoad } from "./$types";
 const navigation = [
   { href: "/", label: "Dashboard", enabled: true },
   { href: "/students", label: "Students", enabled: true },
-  { href: "/teams", label: "Teams", enabled: false }
+  { href: "/teams", label: "Teams", enabled: true }
 ];
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {

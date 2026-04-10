@@ -37,13 +37,13 @@
         {:else}
           <div class="space-y-3">
             {#each pageData.dashboard?.recentTeams ?? [] as team}
-              <div class="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3">
+              <a class="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-3 transition hover:border-[var(--color-accent)]" href={`/teams/${team.teamId}`}>
                 <div>
                   <p class="font-medium">{team.name}</p>
                   <p class="text-sm text-[var(--color-muted-foreground)]">{team.mode} · {team.updatedAt}</p>
                 </div>
-                <span class="text-sm text-[var(--color-muted-foreground)]">Teams view coming soon</span>
-              </div>
+                <span class="text-sm text-[var(--color-muted-foreground)]">Open</span>
+              </a>
             {/each}
           </div>
         {/if}
