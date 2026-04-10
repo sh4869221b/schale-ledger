@@ -16,6 +16,8 @@ Deploy model:
 - [ ] `bun run db:migrate:local` again confirms idempotent migration tracking
 - [ ] Cloudflare dev project tracks `dev`
 - [ ] Cloudflare prod project tracks `main`
+- [ ] root directory is repository root in both projects
+- [ ] build command is `bun install && bun run build` in both projects
 - [ ] Cloudflare Access values are configured for each project
 - [ ] D1 binding is configured for each project
 - [ ] Session cookie secret is configured for each project
