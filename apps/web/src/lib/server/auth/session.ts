@@ -1,5 +1,4 @@
-import { createDb, createUsersRepository, sessions, users, type ExternalIdentity } from "@schale-ledger/db";
-import { eq } from "drizzle-orm";
+import { createDb, createUsersRepository, eq, sessions, users, type ExternalIdentity } from "@schale-ledger/db";
 import type { Cookies } from "@sveltejs/kit";
 import { verifyAccessJwt, type AccessConfig, type AccessIdentity } from "./access";
 
