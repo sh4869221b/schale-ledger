@@ -2,6 +2,8 @@
 
 生徒育成情報と編成情報を管理する、Cloudflare Workers + D1 ベースの SvelteKit アプリです。
 
+> Legacy Pages / Neon / Hyperdrive implementation has been removed from the active runtime path.
+
 ## 構成
 - `apps/web`: SvelteKit（UI + Workers server routes）
 - `packages/core`: ビジネスルール / validation

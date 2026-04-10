@@ -6,9 +6,6 @@
       "name": "schale-ledger",
       "devDependencies": {
         "@types/node": "^24.9.1",
-        "@types/pg": "^8.15.6",
-        "drizzle-orm": "^0.44.7",
-        "pg": "^8.16.3",
         "typescript": "^5.9.3",
       },
     },
@@ -34,16 +31,6 @@
         "wrangler": "^4.65.0",
       },
     },
-    "packages/application": {
-      "name": "@schale-ledger/application",
-      "dependencies": {
-        "@schale-ledger/contracts": "workspace:*",
-        "@schale-ledger/domain": "workspace:*",
-      },
-    },
-    "packages/contracts": {
-      "name": "@schale-ledger/contracts",
-    },
     "packages/core": {
       "name": "@schale-ledger/core",
       "dependencies": {
@@ -62,19 +49,6 @@
         "drizzle-kit": "^0.31.4",
         "typescript": "^5.9.3",
         "wrangler": "^4.65.0",
-      },
-    },
-    "packages/domain": {
-      "name": "@schale-ledger/domain",
-    },
-    "packages/infrastructure": {
-      "name": "@schale-ledger/infrastructure",
-      "dependencies": {
-        "@schale-ledger/application": "workspace:*",
-        "@schale-ledger/contracts": "workspace:*",
-        "@schale-ledger/domain": "workspace:*",
-        "drizzle-orm": "^0.44.7",
-        "pg": "^8.16.3",
       },
     },
     "packages/ui": {
@@ -276,17 +250,9 @@
 
     "@rolldown/pluginutils": ["@rolldown/pluginutils@1.0.0-rc.15", "", {}, "sha512-UromN0peaE53IaBRe9W7CjrZgXl90fqGpK+mIZbA3qSTeYqg3pqpROBdIPvOG3F5ereDHNwoHBI2e50n1BDr1g=="],
 
-    "@schale-ledger/application": ["@schale-ledger/application@workspace:packages/application"],
-
-    "@schale-ledger/contracts": ["@schale-ledger/contracts@workspace:packages/contracts"],
-
     "@schale-ledger/core": ["@schale-ledger/core@workspace:packages/core"],
 
     "@schale-ledger/db": ["@schale-ledger/db@workspace:packages/db"],
-
-    "@schale-ledger/domain": ["@schale-ledger/domain@workspace:packages/domain"],
-
-    "@schale-ledger/infrastructure": ["@schale-ledger/infrastructure@workspace:packages/infrastructure"],
 
     "@schale-ledger/ui": ["@schale-ledger/ui@workspace:packages/ui"],
 

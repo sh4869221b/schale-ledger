@@ -1,5 +1,7 @@
 # Workers + D1 Cutover Checklist
 
+Current status: cutover complete, legacy Pages / Neon code paths should remain removed.
+
 - [ ] `bun install`
 - [ ] `bun test`
 - [ ] `bun run check`

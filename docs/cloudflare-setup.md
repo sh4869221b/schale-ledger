@@ -1,5 +1,7 @@
 # Cloudflare Setup
 
+Current status: Workers + D1 is the only supported deployment target. Legacy Pages / Neon / Hyperdrive settings are no longer used.
+
 ## 1. ローカル認証
 ```bash
 bunx wrangler login
