@@ -2,6 +2,13 @@
   "name": "@schale-ledger/db",
   "private": true,
   "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
   "scripts": {
     "migrate:local": "wrangler d1 migrations apply DB --local --persist-to ../../.wrangler/d1-local --config ../../apps/web/wrangler.jsonc",
     "migrate:dev": "wrangler d1 migrations apply DB --env dev --config ../../apps/web/wrangler.jsonc",

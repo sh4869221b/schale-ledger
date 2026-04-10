@@ -12,7 +12,8 @@
   },
   "vars": {
     "CF_ACCESS_AUD": "replace-me",
-    "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com"
+    "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com",
+    "SESSION_COOKIE_SECRET": "replace-me-session-secret"
   },
   "d1_databases": [
     {
@@ -34,7 +35,8 @@
       },
       "vars": {
         "CF_ACCESS_AUD": "replace-me-dev",
-        "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com"
+        "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com",
+        "SESSION_COOKIE_SECRET": "replace-me-dev-session-secret"
       },
       "d1_databases": [
         {
@@ -56,7 +58,8 @@
       },
       "vars": {
         "CF_ACCESS_AUD": "replace-me-prod",
-        "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com"
+        "CF_ACCESS_TEAM_DOMAIN": "replace-me.cloudflareaccess.com",
+        "SESSION_COOKIE_SECRET": "replace-me-prod-session-secret"
       },
       "d1_databases": [
         {

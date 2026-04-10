@@ -11,12 +11,15 @@
     "deploy:prod": "bun run build && wrangler deploy --env prod"
   },
   "dependencies": {
+    "@schale-ledger/db": "workspace:*",
     "@schale-ledger/ui": "workspace:*",
     "@sveltejs/adapter-cloudflare": "latest",
     "@sveltejs/kit": "latest",
+    "jose": "^6.1.0",
     "svelte": "latest"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260405.0",
     "@tailwindcss/vite": "^4.1.14",
     "@sveltejs/vite-plugin-svelte": "latest",
     "svelte-check": "latest",
