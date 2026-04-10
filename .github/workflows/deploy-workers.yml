@@ -1,0 +1,84 @@
+name: Deploy Workers
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workers-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-dev:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'dev'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DEV_DB_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID_DEV }}
+      CF_ACCESS_AUD: ${{ secrets.CF_ACCESS_AUD_DEV }}
+      CF_ACCESS_TEAM_DOMAIN: ${{ secrets.CF_ACCESS_TEAM_DOMAIN }}
+      SESSION_COOKIE_SECRET: ${{ secrets.SESSION_COOKIE_SECRET_DEV }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Inject dev Cloudflare values into wrangler config
+        run: python .github/workflows/scripts/prepare_wrangler.py dev apps/web/wrangler.jsonc
+
+      - name: Run build
+        run: bun run build
+
+      - name: Apply D1 migrations (dev)
+        run: bun run --cwd ./packages/db migrate:dev
+
+      - name: Deploy worker (dev)
+        run: bun run deploy:dev
+
+  deploy-prod:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROD_DB_ID: ${{ secrets.CLOUDFLARE_D1_DATABASE_ID_PROD }}
+      CF_ACCESS_AUD: ${{ secrets.CF_ACCESS_AUD_PROD }}
+      CF_ACCESS_TEAM_DOMAIN: ${{ secrets.CF_ACCESS_TEAM_DOMAIN }}
+      SESSION_COOKIE_SECRET: ${{ secrets.SESSION_COOKIE_SECRET_PROD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Inject prod Cloudflare values into wrangler config
+        run: python .github/workflows/scripts/prepare_wrangler.py prod apps/web/wrangler.jsonc
+
+      - name: Run build
+        run: bun run build
+
+      - name: Apply D1 migrations (prod)
+        run: bun run --cwd ./packages/db migrate:prod
+
+      - name: Deploy worker (prod)
+        run: bun run deploy:prod
