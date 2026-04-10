@@ -159,6 +159,8 @@ export async function resolveRequestUser(input: ResolveRequestUserInput): Promis
   const now = input.now?.() ?? new Date();
   const verifyAccess = input.verifyAccess ?? verifyAccessJwt;
   const createSessionId = input.createSessionId ?? (() => crypto.randomUUID());
+  const token = input.headers.get("cf-access-jwt-assertion");
+  const verifiedIdentity = token ? await verifyAccess(token, input.accessConfig) : null;
 
   const rawSessionCookie = input.cookies.get(SESSION_COOKIE_NAME);
   const existingSessionId = await getSessionIdFromCookieValue(rawSessionCookie, input.sessionSecret);
@@ -168,59 +170,72 @@ export async function resolveRequestUser(input: ResolveRequestUserInput): Promis
   }
 
   if (existingSessionId) {
+    let sessionCleared = false;
     const session = await input.db.query.sessions.findFirst({ where: eq(sessions.sessionId, existingSessionId) });
     if (session && new Date(session.expiresAt).getTime() > now.getTime()) {
       const user = await input.db.query.users.findFirst({ where: eq(users.id, session.userId) });
 
       if (user) {
+        if (verifiedIdentity && user.id !== verifiedIdentity.sub) {
+          await clearSession({ cookies: input.cookies, sessionId: existingSessionId, db: input.db });
+          sessionCleared = true;
+        } else {
+          if (verifiedIdentity && user.email !== (verifiedIdentity.email ?? null)) {
+            await input.db.update(users).set({
+              email: verifiedIdentity.email ?? null,
+              updatedAt: now.toISOString()
+            }).where(eq(users.id, user.id));
+          }
+
         let expiresAt = session.expiresAt;
 
-        if (shouldRefreshSession(session.expiresAt, now)) {
-          expiresAt = await refreshSession(input.db, session.sessionId, now);
-          input.cookies.set(
-            SESSION_COOKIE_NAME,
-            await signSessionCookieValue(session.sessionId, input.sessionSecret),
-            cookieOptions(expiresAt)
-          );
-        }
-
-        return {
-          user: {
-            userId: user.id,
-            email: user.email
-          },
-          session: {
-            sessionId: session.sessionId,
-            expiresAt
+          if (shouldRefreshSession(session.expiresAt, now)) {
+            expiresAt = await refreshSession(input.db, session.sessionId, now);
+            input.cookies.set(
+              SESSION_COOKIE_NAME,
+              await signSessionCookieValue(session.sessionId, input.sessionSecret),
+              cookieOptions(expiresAt)
+            );
           }
-        };
+
+          return {
+            user: {
+              userId: user.id,
+              email: verifiedIdentity?.email ?? user.email
+            },
+            session: {
+              sessionId: session.sessionId,
+              expiresAt
+            }
+          };
+        }
       }
     }
 
-    await clearSession({ cookies: input.cookies, sessionId: existingSessionId, db: input.db });
+    if (!sessionCleared) {
+      await clearSession({ cookies: input.cookies, sessionId: existingSessionId, db: input.db });
+    }
   }
 
-  const token = input.headers.get("cf-access-jwt-assertion");
-  if (!token) {
+  if (!verifiedIdentity) {
     return null;
   }
 
-  const identity = await verifyAccess(token, input.accessConfig);
-  const externalIdentity = toExternalIdentity(identity);
+  const externalIdentity = toExternalIdentity(verifiedIdentity);
   const userRepository = createUsersRepository(input.db as never);
 
   let user = await userRepository.findByExternalIdentity(externalIdentity);
   if (!user) {
     user = await userRepository.create(externalIdentity);
-  } else if (user.email !== (identity.email ?? null)) {
+  } else if (user.email !== (verifiedIdentity.email ?? null)) {
     await input.db.update(users).set({
-      email: identity.email ?? null,
+      email: verifiedIdentity.email ?? null,
       updatedAt: now.toISOString()
     }).where(eq(users.id, user.id));
 
     user = {
       ...user,
-      email: identity.email ?? null
+      email: verifiedIdentity.email ?? null
     };
   }
 

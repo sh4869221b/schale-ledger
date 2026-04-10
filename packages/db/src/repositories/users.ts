@@ -20,14 +20,23 @@ export function createUsersRepository(db: Database) {
     create: async (identity: ExternalIdentity) => {
       const userId = identity.subject;
 
-      await db.insert(users).values({
-        id: userId,
-        externalProvider: identity.provider,
-        externalSubject: identity.subject,
-        email: identity.email ?? null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      try {
+        await db.insert(users).values({
+          id: userId,
+          externalProvider: identity.provider,
+          externalSubject: identity.subject,
+          email: identity.email ?? null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+      } catch (error) {
+        const existing = await db.query.users.findFirst({ where: eq(users.id, userId) });
+        if (existing) {
+          return existing;
+        }
+
+        throw error;
+      }
 
       return db.query.users.findFirst({ where: eq(users.id, userId) });
     }

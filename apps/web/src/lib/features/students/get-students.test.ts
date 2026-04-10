@@ -36,6 +36,18 @@ test("toStudentListModel keeps pageCount from total even when current page has n
   expect(model.pagination.pageCount).toBe(3);
 });
 
+test("toStudentListModel clamps page to the last page when it is too large", () => {
+  const model = toStudentListModel({
+    query: { page: 999 },
+    students: [],
+    total: 50
+  });
+
+  expect(model.pagination.page).toBe(3);
+  expect(model.pagination.previousPage).toBe(2);
+  expect(model.pagination.nextPage).toBeNull();
+});
+
 test("getStudentDetail throws 404 when student does not exist", async () => {
   await expect(
     getStudentDetail(

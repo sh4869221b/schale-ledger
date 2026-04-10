@@ -104,6 +104,69 @@ test("resolveRequestUser refreshes a session that is close to expiry", async () 
   expect(cookies.setCalls).toHaveLength(1);
 });
 
+test("resolveRequestUser replaces the app session when the current Access user differs", async () => {
+  const cookies = createCookies(await signSessionCookieValue("sess_123", "test-secret"));
+  let deleteCalls = 0;
+  let insertCalls = 0;
+  let userFindCalls = 0;
+
+  const result = await resolveRequestUser({
+    cookies,
+    headers: new Headers([["cf-access-jwt-assertion", "header.payload.signature"]]),
+    db: {
+      query: {
+        sessions: {
+          findFirst: async () => ({
+            sessionId: "sess_123",
+            userId: "old_user",
+            expiresAt: "2099-01-01T00:00:00.000Z"
+          })
+        },
+        users: {
+          findFirst: async () => {
+            userFindCalls += 1;
+            if (userFindCalls >= 2) {
+              return { id: "new_user", email: "new@example.com" };
+            }
+
+            return { id: "old_user", email: "old@example.com" };
+          }
+        }
+      },
+      insert: () => ({
+        values: async () => {
+          insertCalls += 1;
+        }
+      }),
+      update: () => ({
+        set: () => ({
+          where: async () => undefined
+        })
+      }),
+      delete: () => ({
+        where: async () => {
+          deleteCalls += 1;
+        }
+      })
+    },
+    accessConfig: {
+      teamDomain: "example.cloudflareaccess.com",
+      audience: "aud"
+    },
+    sessionSecret: "test-secret",
+    createSessionId: () => "sess_new",
+    verifyAccess: async () => ({
+      sub: "new_user",
+      email: "new@example.com"
+    })
+  } as never);
+
+  expect(result?.user.userId).toBe("new_user");
+  expect(deleteCalls).toBe(1);
+  expect(insertCalls).toBe(1);
+  expect(cookies.setCalls).toHaveLength(1);
+});
+
 test("resolveRequestUser falls back to Access JWT when the session is unusable", async () => {
   const cookies = createCookies(await signSessionCookieValue("sess_123", "test-secret"));
   let deleteCalls = 0;

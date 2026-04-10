@@ -46,9 +46,9 @@ export function buildStudentPagination(page: number, pageCount: number) {
 }
 
 export function toStudentListModel(input: StudentListInput) {
-  const page = normalizePage(input.query.page);
   const total = input.total;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(normalizePage(input.query.page), pageCount);
   const paginationLinks = buildStudentPagination(page, pageCount);
 
   return {
@@ -114,7 +114,8 @@ export async function getStudents(db: Database, userId: string, query: StudentLi
       };
     });
 
-  const page = normalizePage(query.page);
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const page = Math.min(normalizePage(query.page), pageCount);
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return toStudentListModel({
