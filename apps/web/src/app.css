@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: oklch(0.17 0.02 255);
+  --color-foreground: oklch(0.97 0.01 255);
+  --color-panel: oklch(0.24 0.03 255);
+  --color-panel-foreground: oklch(0.97 0.01 255);
+  --color-accent: oklch(0.72 0.17 235);
+  --color-accent-foreground: oklch(0.16 0.02 255);
+  --color-border: oklch(0.33 0.03 255);
+  --color-muted: oklch(0.27 0.02 255);
+  --color-muted-foreground: oklch(0.78 0.02 255);
+  --radius-panel: 1rem;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
