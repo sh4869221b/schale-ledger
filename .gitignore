@@ -8,6 +8,8 @@ node_modules
 *.sqlite-journal
 *.sqlite-shm
 *.sqlite-wal
+__pycache__/
+*.pyc
 services/app/wrangler.jsonc
 .env
 .env.*
