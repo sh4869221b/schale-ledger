@@ -12,6 +12,12 @@
 - `infrastructure/wrangler`: deploy / cutover 運用メモ
 - `docs/spec`: 仕様書
 
+## デプロイ方針
+- primary deploy path: **Cloudflare Workers Git integration**
+- branch mapping: `dev` -> dev, `main` -> prod
+- GitHub Actions: **CI-only**
+- D1 migrations: **manual**
+
 ## 必須確認コマンド
 ```bash
 bun install
@@ -33,12 +39,6 @@ bun run dev
 bun run db:migrate:local
 bun run --cwd ./packages/db migrate:dev
 bun run --cwd ./packages/db migrate:prod
-```
-
-## デプロイ
-```bash
-bun run deploy:dev
-bun run deploy:prod
 ```
 
 Cloudflare Access / D1 / Workers の詳細は `docs/cloudflare-setup.md` と `infrastructure/wrangler/README.md` を参照してください。

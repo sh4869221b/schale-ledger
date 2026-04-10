@@ -1,5 +1,11 @@
 # Workers / Wrangler operations
 
+Deploy model:
+- primary deploy path: Cloudflare Workers Git integration
+- branch mapping: `dev` -> dev, `main` -> prod
+- GitHub Actions: CI-only
+- migrations: manual
+
 ## Required local verification
 
 ```bash
@@ -17,21 +23,25 @@ bun run db:migrate:local
 bun run dev
 ```
 
-## Deploy commands
+## Manual migration commands
 
 ```bash
-bun run deploy:dev
-bun run deploy:prod
+bun run db:migrate:local
+bun run --cwd ./packages/db migrate:dev
+bun run --cwd ./packages/db migrate:prod
 ```
 
-## Required GitHub secrets
+## Required Cloudflare project settings
 
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_D1_DATABASE_ID_DEV`
-- `CLOUDFLARE_D1_DATABASE_ID_PROD`
-- `CF_ACCESS_AUD_DEV`
-- `CF_ACCESS_AUD_PROD`
-- `CF_ACCESS_TEAM_DOMAIN`
-- `SESSION_COOKIE_SECRET_DEV`
-- `SESSION_COOKIE_SECRET_PROD`
+- dev project
+  - branch `dev`
+  - D1 binding: dev DB
+  - `CF_ACCESS_AUD`
+  - `CF_ACCESS_TEAM_DOMAIN`
+  - `SESSION_COOKIE_SECRET`
+- prod project
+  - branch `main`
+  - D1 binding: prod DB
+  - `CF_ACCESS_AUD`
+  - `CF_ACCESS_TEAM_DOMAIN`
+  - `SESSION_COOKIE_SECRET`

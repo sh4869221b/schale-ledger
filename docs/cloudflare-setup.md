@@ -2,6 +2,12 @@
 
 Current status: Workers + D1 is the only supported deployment target. Legacy Pages / Neon / Hyperdrive settings are no longer used.
 
+Deploy model:
+- primary deploy path: Cloudflare Workers Git integration
+- branch mapping: `dev` -> dev, `main` -> prod
+- GitHub Actions: CI-only
+- migrations: manual
+
 ## 1. ローカル認証
 ```bash
 bunx wrangler login
@@ -12,7 +18,7 @@ bunx wrangler whoami
 - `schale-ledger-dev`
 - `schale-ledger-prod`
 
-作成後に database id を控え、GitHub Secrets に設定します。
+作成後に database id を控え、Cloudflare project settings に設定します。
 
 ## 3. Workers 設定
 - `apps/web/wrangler.jsonc` をベースに `dev` / `prod` の binding を設定する
@@ -25,20 +31,28 @@ bunx wrangler whoami
 - ログイン方式: One-time PIN
 - `CF_ACCESS_AUD_DEV` / `CF_ACCESS_AUD_PROD` を取得する
 
-## 5. GitHub Secrets
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_D1_DATABASE_ID_DEV`
-- `CLOUDFLARE_D1_DATABASE_ID_PROD`
-- `CF_ACCESS_AUD_DEV`
-- `CF_ACCESS_AUD_PROD`
-- `CF_ACCESS_TEAM_DOMAIN`
-- `SESSION_COOKIE_SECRET_DEV`
-- `SESSION_COOKIE_SECRET_PROD`
+## 5. Cloudflare project settings
+- dev project
+  - branch: `dev`
+  - root/build target: `apps/web`
+  - build command: `bun install && bun run build`
+  - D1 binding: dev DB
+  - `CF_ACCESS_AUD`
+  - `CF_ACCESS_TEAM_DOMAIN`
+  - `SESSION_COOKIE_SECRET`
+- prod project
+  - branch: `main`
+  - root/build target: `apps/web`
+  - build command: `bun install && bun run build`
+  - D1 binding: prod DB
+  - `CF_ACCESS_AUD`
+  - `CF_ACCESS_TEAM_DOMAIN`
+  - `SESSION_COOKIE_SECRET`
 
 ## 6. デプロイ
-- `dev` push -> CI -> dev migration + dev deploy
-- `main` push -> CI -> prod migration + prod deploy
+- `dev` push -> Cloudflare dev project deploy
+- `main` push -> Cloudflare prod project deploy
+- migration は deploy 前に必要に応じて手動実行する
 
 ## 7. 事前確認
 ```bash
