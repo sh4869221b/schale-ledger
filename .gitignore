@@ -4,6 +4,10 @@ node_modules
 .wrangler
 .worktrees/
 .superpowers/
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
 services/app/wrangler.jsonc
 .env
 .env.*

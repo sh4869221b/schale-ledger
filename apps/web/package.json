@@ -1,0 +1,25 @@
+{
+  "name": "@schale-ledger/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "svelte-kit sync && vite build",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "preview": "vite preview",
+    "deploy:dev": "bun run build && wrangler deploy --env dev",
+    "deploy:prod": "bun run build && wrangler deploy --env prod"
+  },
+  "dependencies": {
+    "@sveltejs/adapter-cloudflare": "latest",
+    "@sveltejs/kit": "latest",
+    "svelte": "latest"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "latest",
+    "svelte-check": "latest",
+    "typescript": "^5.9.3",
+    "vite": "latest",
+    "wrangler": "^4.65.0"
+  }
+}

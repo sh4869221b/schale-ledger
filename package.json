@@ -3,19 +3,19 @@
   "private": true,
   "packageManager": "bun@1.3.5",
   "workspaces": [
-    "services/*",
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "dev": "cd services/app && bun run dev",
-    "build": "cd services/app && bun run build",
-    "check": "cd services/app && bun run check",
+    "dev": "bun run --cwd ./apps/web dev",
+    "build": "bun run --cwd ./apps/web build",
+    "check": "bun run --cwd ./apps/web check",
     "test": "bun test",
     "db:migrate": "bun run scripts/migrate.ts",
     "db:migrate:dev": "DATABASE_URL=$NEON_DATABASE_URL_DEV bun run db:migrate",
     "db:migrate:prod": "DATABASE_URL=$NEON_DATABASE_URL_PROD bun run db:migrate",
-    "deploy:dev": "cd services/app && bun run deploy:dev",
-    "deploy:prod": "cd services/app && bun run deploy:prod"
+    "deploy:dev": "bun run --cwd ./apps/web deploy:dev",
+    "deploy:prod": "bun run --cwd ./apps/web deploy:prod"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",

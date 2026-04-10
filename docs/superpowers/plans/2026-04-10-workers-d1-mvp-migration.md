@@ -6,7 +6,7 @@
 
 **Architecture:** Create a new `apps/web` SvelteKit application for Workers, move reusable business rules into `packages/core`, move D1/Drizzle concerns into `packages/db`, and centralize UI primitives in `packages/ui`. Keep the legacy Pages/Neon code in place until the new MVP is verified, then perform a single cutover and remove old infrastructure.
 
-**Tech Stack:** Bun workspaces, SvelteKit, Cloudflare Workers, Cloudflare Vite plugin, Tailwind CSS v4, shadcn-svelte, Drizzle ORM, D1, Cloudflare Access, GitHub Actions
+**Tech Stack:** Bun workspaces, SvelteKit, `@sveltejs/adapter-cloudflare`, Cloudflare Workers, Tailwind CSS v4, shadcn-svelte, Drizzle ORM, D1, Cloudflare Access, GitHub Actions
 
 ---
 
@@ -186,9 +186,9 @@ Update root `package.json` to use `apps/*` and `packages/*`, and add scripts lik
 }
 ```
 
-- [ ] **Step 3: Wire SvelteKit to Cloudflare Workers with explicit adapter/plugin choices**
+- [ ] **Step 3: Wire SvelteKit to Cloudflare Workers with the official SvelteKit configuration**
 
-Use `cloudflare()` from `@cloudflare/vite-plugin` in `apps/web/vite.config.ts`, and use `@sveltejs/adapter-cloudflare` in `apps/web/svelte.config.js`.
+Use only `sveltekit()` in `apps/web/vite.config.ts`, and use `@sveltejs/adapter-cloudflare` in `apps/web/svelte.config.js`.
 
 `apps/web/svelte.config.js` should look like:
 
@@ -204,7 +204,7 @@ const config = {
 export default config;
 ```
 
-`apps/web/wrangler.jsonc` should include placeholder `d1_databases`, `vars.CF_ACCESS_AUD`, and `vars.CF_ACCESS_TEAM_DOMAIN` entries for `dev` and `prod`.
+`apps/web/wrangler.jsonc` should include `main`, `assets.directory`, `compatibility_flags: ["nodejs_als"]`, placeholder `d1_databases`, `vars.CF_ACCESS_AUD`, and `vars.CF_ACCESS_TEAM_DOMAIN` entries for `dev` and `prod`.
 
 - [ ] **Step 4: Add a smoke page and verify the new app builds**
 

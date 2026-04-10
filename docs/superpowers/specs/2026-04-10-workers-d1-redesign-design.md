@@ -9,7 +9,6 @@
 - 対象スタック
   - SvelteKit
   - Cloudflare Workers
-  - Cloudflare Vite plugin
   - Tailwind CSS v4
   - shadcn-svelte
   - Drizzle ORM
@@ -39,10 +38,14 @@
 
 ### Runtime
 - 単一の SvelteKit アプリを Cloudflare Workers 上で実行する。
-- Cloudflare Vite plugin を使い、ローカル開発と Workers 実行環境の差を小さくする。
+- `@sveltejs/adapter-cloudflare` + `wrangler.jsonc` を使う公式の SvelteKit on Workers 構成を採用する。
 - Cloudflare Pages 前提の build/deploy 設定は廃止する。
 - リリース方式は単一 cutover とし、本番で旧新構成を並行稼働させない。
 - 本書に記載する Phase 1-4 は実装順序の整理であり、本番段階的リリースを意味しない。
+
+### Vite Integration Decision
+- Cloudflare Vite plugin は、現行の公式 SvelteKit + `adapter-cloudflare` 構成とは噛み合わず、`vite build` 時に生成前の Worker entry を要求して失敗するため採用しない。
+- Vite 側は `@sveltejs/kit/vite` の標準構成を使い、Cloudflare 連携は SvelteKit adapter と Wrangler に集約する。
 
 ### Repository Structure
 - 現在の `services/app` + `packages/domain|application|infrastructure|contracts` 依存構成は維持しない。
