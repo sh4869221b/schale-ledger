@@ -18,7 +18,8 @@
     {
       "binding": "DB",
       "database_name": "schale-ledger-dev",
-      "database_id": "00000000-0000-0000-0000-000000000001"
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "../../packages/db/migrations"
     }
   ],
   "env": {
@@ -39,7 +40,8 @@
         {
           "binding": "DB",
           "database_name": "schale-ledger-dev",
-          "database_id": "00000000-0000-0000-0000-000000000001"
+          "database_id": "00000000-0000-0000-0000-000000000001",
+          "migrations_dir": "../../packages/db/migrations"
         }
       ]
     },
@@ -60,7 +62,8 @@
         {
           "binding": "DB",
           "database_name": "schale-ledger-prod",
-          "database_id": "00000000-0000-0000-0000-000000000002"
+          "database_id": "00000000-0000-0000-0000-000000000002",
+          "migrations_dir": "../../packages/db/migrations"
         }
       ]
     }

@@ -1,0 +1,35 @@
+[
+  {
+    "studentId": "S0001",
+    "name": "アリス",
+    "school": "ミレニアム",
+    "role": "Dealer",
+    "position": "Back",
+    "attackType": "Mystic",
+    "defenseType": "Light",
+    "rarityBase": 3,
+    "isLimited": false
+  },
+  {
+    "studentId": "S0002",
+    "name": "ホシノ",
+    "school": "アビドス",
+    "role": "Tank",
+    "position": "Front",
+    "attackType": "Explosive",
+    "defenseType": "Heavy",
+    "rarityBase": 3,
+    "isLimited": false
+  },
+  {
+    "studentId": "S0003",
+    "name": "ヒマリ",
+    "school": "ミレニアム",
+    "role": "Support",
+    "position": "Back",
+    "attackType": "Mystic",
+    "defenseType": "Special",
+    "rarityBase": 3,
+    "isLimited": false
+  }
+]

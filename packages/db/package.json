@@ -1,0 +1,18 @@
+{
+  "name": "@schale-ledger/db",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migrate:local": "wrangler d1 migrations apply DB --local --persist-to ../../.wrangler/d1-local --config ../../apps/web/wrangler.jsonc",
+    "migrate:dev": "wrangler d1 migrations apply DB --env dev --config ../../apps/web/wrangler.jsonc",
+    "migrate:prod": "wrangler d1 migrations apply DB --env prod --config ../../apps/web/wrangler.jsonc"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.7"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.65.0"
+  }
+}

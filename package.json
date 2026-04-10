@@ -11,9 +11,10 @@
     "build": "bun run --cwd ./apps/web build",
     "check": "bun run --cwd ./apps/web check",
     "test": "bun test",
-    "db:migrate": "bun run scripts/migrate.ts",
-    "db:migrate:dev": "DATABASE_URL=$NEON_DATABASE_URL_DEV bun run db:migrate",
-    "db:migrate:prod": "DATABASE_URL=$NEON_DATABASE_URL_PROD bun run db:migrate",
+    "db:migrate:legacy": "bun run scripts/migrate.ts",
+    "db:migrate:legacy:dev": "DATABASE_URL=$NEON_DATABASE_URL_DEV bun run db:migrate:legacy",
+    "db:migrate:legacy:prod": "DATABASE_URL=$NEON_DATABASE_URL_PROD bun run db:migrate:legacy",
+    "db:migrate:local": "bun run --cwd ./packages/db migrate:local",
     "deploy:dev": "bun run --cwd ./apps/web deploy:dev",
     "deploy:prod": "bun run --cwd ./apps/web deploy:prod"
   },
