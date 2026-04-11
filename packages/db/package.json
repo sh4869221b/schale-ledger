@@ -11,8 +11,8 @@
   },
   "scripts": {
     "migrate:local": "wrangler d1 migrations apply DB --local --persist-to ../../.wrangler/d1-local --config ../../apps/web/wrangler.jsonc",
-    "migrate:dev": "wrangler d1 migrations apply DB --env dev --config ../../apps/web/wrangler.jsonc",
-    "migrate:prod": "wrangler d1 migrations apply DB --env prod --config ../../apps/web/wrangler.jsonc"
+    "migrate:remote:dev": "wrangler d1 migrations apply DB --remote --env dev --config ../../apps/web/wrangler.jsonc",
+    "migrate:remote:prod": "wrangler d1 migrations apply DB --remote --config ../../apps/web/wrangler.jsonc"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.7"
