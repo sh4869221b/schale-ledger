@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ROOT_PACKAGE = ROOT / "package.json"
+WEB_PACKAGE = ROOT / "apps" / "web" / "package.json"
 
 
 class RuntimeOpsScriptTests(unittest.TestCase):
@@ -22,6 +23,12 @@ class RuntimeOpsScriptTests(unittest.TestCase):
         self.assertIn("check", scripts)
         self.assertIn("test", scripts)
         self.assertIn("db:migrate:local", scripts)
+
+    def test_web_package_has_no_local_deploy_scripts(self):
+        package = json.loads(WEB_PACKAGE.read_text())
+        scripts = package["scripts"]
+        self.assertNotIn("deploy:dev", scripts)
+        self.assertNotIn("deploy:prod", scripts)
 
 
 if __name__ == "__main__":

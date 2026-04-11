@@ -6,9 +6,7 @@
     "dev": "vite dev",
     "build": "svelte-kit sync && vite build",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "preview": "vite preview",
-    "deploy:dev": "bun run build && wrangler deploy --env dev",
-    "deploy:prod": "bun run build && wrangler deploy --env prod"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@schale-ledger/core": "workspace:*",
