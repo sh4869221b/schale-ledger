@@ -11,9 +11,7 @@
     "build": "bun run --cwd ./apps/web build",
     "check": "bun run --cwd ./apps/web check",
     "test": "bun test",
-    "db:migrate:local": "bun run --cwd ./packages/db migrate:local",
-    "deploy:dev": "bun run --cwd ./apps/web deploy:dev",
-    "deploy:prod": "bun run --cwd ./apps/web deploy:prod"
+    "db:migrate:local": "bun run --cwd ./packages/db migrate:local"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",
