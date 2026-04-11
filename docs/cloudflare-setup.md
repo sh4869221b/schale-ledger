@@ -36,6 +36,7 @@ bunx wrangler whoami
   - branch: `dev`
   - root/build target: `apps/web`
   - build command: `bun install && bun run build`
+  - deploy command: `bunx wrangler deploy --config apps/web/wrangler.jsonc --env dev --keep-vars`
   - D1 binding: dev DB
   - `CF_ACCESS_AUD`
   - `CF_ACCESS_TEAM_DOMAIN`
@@ -44,6 +45,7 @@ bunx wrangler whoami
   - branch: `main`
   - root/build target: `apps/web`
   - build command: `bun install && bun run build`
+  - deploy command: `bunx wrangler deploy --config apps/web/wrangler.jsonc --keep-vars`
   - D1 binding: prod DB
   - `CF_ACCESS_AUD`
   - `CF_ACCESS_TEAM_DOMAIN`
@@ -53,6 +55,7 @@ bunx wrangler whoami
 - `dev` push -> Cloudflare dev project deploy
 - `main` push -> Cloudflare prod project deploy
 - migration は deploy 前に必要に応じて手動実行する
+- 上記 deploy command は Cloudflare Dashboard に設定する値であり、通常運用でローカル実行しない
 
 ## 7. 事前確認
 ```bash
@@ -62,4 +65,11 @@ bun run check
 bun run build
 bun run db:migrate:local
 bun run db:migrate:local
+```
+
+## 8. 手動 migration
+```bash
+bun run db:migrate:local
+bun run --cwd ./packages/db migrate:remote:dev
+bun run --cwd ./packages/db migrate:remote:prod
 ```

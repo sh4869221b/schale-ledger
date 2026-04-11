@@ -16,6 +16,8 @@ class CloudflareGitDocsTests(unittest.TestCase):
             self.assertIn("Cloudflare", text)
             self.assertNotIn("bun run deploy:dev", text)
             self.assertNotIn("bun run deploy:prod", text)
+            self.assertNotIn("migrate:dev", text)
+            self.assertNotIn("migrate:prod", text)
 
     def test_docs_state_ci_only_manual_migration_and_branch_mapping(self):
         combined = "\n".join(path.read_text() for path in [README, CLOUDFLARE_SETUP, WRANGLER_README, CHECKLIST])
@@ -23,6 +25,13 @@ class CloudflareGitDocsTests(unittest.TestCase):
         self.assertIn("manual", combined)
         self.assertIn("dev` -> dev", combined)
         self.assertIn("main` -> prod", combined)
+
+    def test_wrangler_readme_explains_runtime_source_of_truth_and_env_mapping(self):
+        text = WRANGLER_README.read_text()
+        self.assertIn("source of truth", text)
+        self.assertIn("prod", text)
+        self.assertIn("top-level", text)
+        self.assertIn("env.dev", text)
 
 
 if __name__ == "__main__":

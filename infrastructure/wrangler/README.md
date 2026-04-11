@@ -5,6 +5,8 @@ Deploy model:
 - branch mapping: `dev` -> dev, `main` -> prod
 - GitHub Actions: CI-only
 - migrations: manual
+- Cloudflare Dashboard is the source of truth for runtime env/secrets
+- prod uses the top-level Wrangler config, dev uses `env.dev`
 
 ## Required local verification
 
@@ -27,9 +29,14 @@ bun run dev
 
 ```bash
 bun run db:migrate:local
-bun run --cwd ./packages/db migrate:dev
-bun run --cwd ./packages/db migrate:prod
+bun run --cwd ./packages/db migrate:remote:dev
+bun run --cwd ./packages/db migrate:remote:prod
 ```
+
+## Cloudflare Dashboard deploy command values
+
+- prod: `bunx wrangler deploy --config apps/web/wrangler.jsonc --keep-vars`
+- dev: `bunx wrangler deploy --config apps/web/wrangler.jsonc --env dev --keep-vars`
 
 ## Required Cloudflare project settings
 

@@ -37,8 +37,8 @@ bun run dev
 ## マイグレーション
 ```bash
 bun run db:migrate:local
-bun run --cwd ./packages/db migrate:dev
-bun run --cwd ./packages/db migrate:prod
+bun run --cwd ./packages/db migrate:remote:dev
+bun run --cwd ./packages/db migrate:remote:prod
 ```
 
 Cloudflare Access / D1 / Workers の詳細は `docs/cloudflare-setup.md` と `infrastructure/wrangler/README.md` を参照してください。
