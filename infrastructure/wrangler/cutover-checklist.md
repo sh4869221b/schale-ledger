@@ -14,6 +14,7 @@ Deploy model:
 - [ ] `bun run build`
 - [ ] `bun run db:migrate:local`
 - [ ] `bun run db:migrate:local` again confirms idempotent migration tracking
+- [ ] Required schema migration is applied before relying on Cloudflare Git integration deploy
 - [ ] Cloudflare dev project tracks `dev`
 - [ ] Cloudflare prod project tracks `main`
 - [ ] root directory is repository root in both projects
@@ -21,3 +22,5 @@ Deploy model:
 - [ ] Cloudflare Access values are configured for each project
 - [ ] D1 binding is configured for each project
 - [ ] Session cookie secret is configured for each project
+- [ ] `curl -i https://<worker>/logout` does not return 500
+- [ ] `bunx wrangler d1 execute <database> --remote --command "select name from sqlite_master where type='table' order by name;"` shows the required app tables

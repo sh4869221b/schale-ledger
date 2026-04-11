@@ -58,9 +58,24 @@
 ## Manual migration commands
 ```bash
 bun run db:migrate:local
-bun run --cwd ./packages/db migrate:dev
-bun run --cwd ./packages/db migrate:prod
+bun run --cwd ./packages/db migrate:remote:dev
+bun run --cwd ./packages/db migrate:remote:prod
 ```
+
+## Migration order
+- schema 変更が必要なら、Cloudflare Git integration deploy より前に対象環境へ migration を実行する
+- deploy はその後、Git integration に任せる
+
+## Runtime validation
+```bash
+curl -i https://<worker>/logout
+bunx wrangler d1 execute schale-ledger-prod --remote --command "select name from sqlite_master where type='table' order by name;"
+```
+
+Expected checks:
+- `/logout` が 500 を返さない
+- `sqlite_master` に `users`, `sessions`, `students`, `student_progress`, `teams`, `team_members` が存在する
+- D1 binding が intended database を向いている
 
 ## Done means
 - `dev` push deploys to the dev Cloudflare Workers project
