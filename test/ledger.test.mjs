@@ -94,7 +94,7 @@ test('Access assertion verification and isolated partial progress saves', async 
   const limited = await (await request('/students?isLimited=yes')).text();
   assert.match(limited, /\/students\/mika/);
   const secondPage = await (await request('/students?page=2')).text();
-  assert.match(secondPage, /2 \/ 2/);
+  assert.match(secondPage, /2 \/ 16/);
 
   const progress = '/students/aris/progress';
   const save = (fields, options) => request(progress, { method: 'POST', fields, ...options });
@@ -129,26 +129,67 @@ test('team form replacement is atomic and protected from concurrent saves', asyn
     team: await db.prepare('SELECT * FROM teams WHERE id=?').bind(id).first(),
     slots: (await db.prepare('SELECT * FROM team_slots WHERE team_id=? ORDER BY position_index').bind(id).all()).results,
   });
-  const replace = (revision, fields, token) => request(path, { token, method: 'POST', fields: { ...initialMetadata, revision, ...fields } });
+  const fieldsFor = fields => ({
+    ...Object.fromEntries(Array.from({ length: 6 }, (_, i) => [
+      [`kind_${i}`, 'owned'], [`owned_${i}`, ''], [`helper_${i}`, ''],
+    ]).flat()), ...fields,
+  });
+  const replace = (revision, fields, token) => request(path, {
+    token, method: 'POST', fields: { ...initialMetadata, revision, ...fieldsFor(fields) },
+  });
   const initial = await snapshot();
+  const register = (student, token) => request(`/students/${student}/progress`, {
+    method: 'POST', fields: { level: '25' }, token,
+  });
+  const choices = html => html.match(/<select id="owned-0"[^>]*>[\s\S]*?<\/select>/)?.[0] ?? '';
   assert.equal((await request(path, { token: rui })).status, 404);
-  assert.equal((await replace(initial.team.revision, { student_0: 'aris' }, rui)).status, 404);
-  assert.equal((await replace(initial.team.revision, { student_0: 'not-in-master' })).status, 400);
-  assert.equal((await replace(initial.team.revision, { student_0: 'aris' })).status, 303);
+  assert.equal((await replace(initial.team.revision, { owned_0: 'aris' }, rui)).status, 404);
+  assert.equal((await replace(initial.team.revision, { owned_0: 'not-in-master' })).status, 400);
+  assert.equal((await register('hoshino', rui)).status, 303);
+  assert.doesNotMatch(choices(await (await request(path)).text()), /ホシノ/);
+  const rejected = await replace(initial.team.revision, { owned_0: 'hoshino' });
+  assert.equal(rejected.status, 400);
+  assert.match(await rejected.text(), /自分が育成登録した生徒/);
+  assert.deepEqual(await snapshot(), initial);
+  assert.equal((await replace(initial.team.revision, { kind_0: 'support', helper_0: 'hoshino' })).status, 303);
+  const helper = await snapshot();
+  assert.equal(helper.slots[0].is_support, 1);
+  assert.equal((await register('aris')).status, 303);
+  const ownedChoices = choices(await (await request(path)).text());
+  assert.match(ownedChoices, /アリス/);
+  assert.doesNotMatch(ownedChoices, /ホシノ/);
+  assert.equal((await replace(helper.team.revision, { owned_0: 'aris' })).status, 303);
   const updated = await snapshot();
   assert.equal(updated.slots.length, 1);
-  assert.equal((await replace(initial.team.revision, { student_0: 'aris' })).status, 303);
+  assert.equal((await replace(helper.team.revision, { owned_0: 'aris' })).status, 303);
   assert.deepEqual(await snapshot(), updated);
 
   await db.prepare(`CREATE TRIGGER force_slot_failure BEFORE INSERT ON team_slots WHEN NEW.position_index=2
     BEGIN SELECT RAISE(ABORT, 'test rollback'); END`).run();
-  assert.equal((await replace(updated.team.revision, { student_1: 'aris', student_2: 'hoshino' })).status, 500);
+  assert.equal((await replace(updated.team.revision, { owned_1: 'aris', kind_2: 'support', helper_2: 'hoshino' })).status, 500);
   await db.prepare('DROP TRIGGER force_slot_failure').run();
   assert.deepEqual(await snapshot(), updated);
 
+  // Simulate eligibility disappearing between the guarded update and the slot insert.
+  await db.prepare(`CREATE TRIGGER remove_eligibility BEFORE UPDATE ON teams
+    BEGIN DELETE FROM progress WHERE account_id=OLD.account_id AND student_id='aris'; END`).run();
+  assert.equal((await replace(updated.team.revision, { owned_1: 'aris' })).status, 500);
+  await db.prepare('DROP TRIGGER remove_eligibility').run();
+  assert.deepEqual(await snapshot(), updated);
+  assert.match(choices(await (await request(path)).text()), /アリス/);
+
+  // An existing slot from the previous release stays visible and requires a correction.
+  await db.prepare('INSERT INTO team_slots VALUES (?, 5, ?, 0)').bind(id, 'yuuka').run();
+  const invalidSnapshot = await snapshot();
+  const legacyHtml = await (await request(path)).text();
+  assert.match(legacyHtml, /ユウカ（育成未登録）/);
+  assert.match(legacyHtml, /students\/yuuka#progress/);
+  assert.equal((await replace(updated.team.revision, { owned_0: 'aris', owned_5: 'yuuka' })).status, 400);
+  assert.deepEqual(await snapshot(), invalidSnapshot);
+
   const attempts = await Promise.all([
-    replace(updated.team.revision, { student_1: 'aris', support_1: 'yes' }),
-    replace(updated.team.revision, { student_3: 'hoshino', support_3: 'yes' }),
+    replace(updated.team.revision, { kind_1: 'support', helper_1: 'aris' }),
+    replace(updated.team.revision, { kind_3: 'support', helper_3: 'hoshino' }),
   ]);
   assert.deepEqual(attempts.map(r => r.status).sort(), [303, 409]);
   assert.match(await attempts.find(r => r.status === 409).text(), /最新の編成を開く/);
@@ -183,12 +224,17 @@ test('mobile browser can search, save growth, create, replace and clear a lineup
   await page.getByRole('searchbox').fill('ツクヨ（ドレス）');
   await page.getByRole('button', { name: '検索', exact: true }).click();
   assert.deepEqual(await page.locator('.student-card h3').allTextContents(), ['ツクヨ（ドレス）']);
+  await page.getByRole('searchbox').fill('マナミ');
+  await page.getByRole('button', { name: '検索', exact: true }).click();
+  await page.getByRole('link', { name: /マナミ/ }).click();
+  assert.equal(await page.getByRole('link', { name: '公式告知' }).getAttribute('href'), 'https://bluearchive.jp/news/newsJump/716');
+  await page.getByRole('link', { name: '生徒一覧へ' }).click();
   await page.getByRole('searchbox').fill('ありす');
   await page.getByRole('button', { name: '検索', exact: true }).click();
-  assert.equal(await page.locator('.student-card').count(), 1);
+  assert.equal(await page.locator('.student-card').count(), 3);
   await fits();
   if (process.env.LEDGER_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.LEDGER_SCREENSHOT_DIR}/students-mobile.png` });
-  await page.getByRole('link', { name: /アリス/ }).click();
+  await page.locator('.student-card[href="/students/aris"]').click();
   await page.getByLabel('レベル', { exact: true }).fill('60');
   await page.getByLabel('メモ', { exact: true }).fill('<script>fixture</script>');
   await page.getByRole('button', { name: '育成記録を保存' }).click();
@@ -201,18 +247,29 @@ test('mobile browser can search, save growth, create, replace and clear a lineup
   await page.getByLabel('編成名').fill('総力戦 テスト');
   await page.getByRole('button', { name: '作成' }).click();
   const teamUrl = page.url();
-  await page.getByLabel('枠 1', { exact: true }).selectOption('tsukuyo');
-  await page.getByLabel('枠 4', { exact: true }).selectOption('tsukuyo-dress');
-  await page.getByLabel('助っ人（枠 4）', { exact: true }).check();
+  const normal = page.getByLabel('所持生徒 1', { exact: true });
+  assert.deepEqual(await normal.locator('option').allTextContents(), ['空き枠', 'アリス']);
+  await normal.selectOption('aris');
+  await page.getByRole('radio', { name: '助っ人（枠 2）', exact: true }).check();
+  const helper = page.getByLabel('助っ人生徒 2', { exact: true });
+  await page.getByLabel('助っ人を検索 2', { exact: true }).fill('ツクヨ');
+  assert.deepEqual(await helper.locator('option').allTextContents(), ['空き枠', 'ツクヨ', 'ツクヨ（ドレス）']);
+  await helper.selectOption('tsukuyo-dress');
   await page.getByRole('button', { name: '編成を保存' }).click();
   assert.equal(await page.getByRole('status').textContent(), '編成を保存しました。');
-  assert.equal(await page.getByLabel('助っ人（枠 4）', { exact: true }).isChecked(), true);
-  assert.equal(await page.getByLabel('枠 1', { exact: true }).inputValue(), 'tsukuyo');
-  assert.equal(await page.getByLabel('枠 4', { exact: true }).inputValue(), 'tsukuyo-dress');
+  assert.equal(await page.getByRole('radio', { name: '助っ人（枠 2）', exact: true }).isChecked(), true);
+  assert.equal(await normal.inputValue(), 'aris');
+  assert.equal(await helper.inputValue(), 'tsukuyo-dress');
   await fits();
-  if (process.env.LEDGER_SCREENSHOT_DIR) await page.screenshot({ path: `${process.env.LEDGER_SCREENSHOT_DIR}/team-mobile.png`, fullPage: true });
-  await page.getByLabel('枠 1', { exact: true }).selectOption('');
-  await page.getByLabel('枠 4', { exact: true }).selectOption('');
+  if (process.env.LEDGER_SCREENSHOT_DIR) {
+    const screenshotDir = process.env.LEDGER_SCREENSHOT_DIR;
+    await page.locator('.slot-grid').evaluate(element => element.scrollIntoView());
+    await page.screenshot({ path: `${screenshotDir}/編成-スマホ幅.png` });
+    await page.locator('[data-slot]').nth(0).screenshot({ path: `${screenshotDir}/編成-所持生徒の候補.png` });
+    await page.locator('[data-slot]').nth(1).screenshot({ path: `${screenshotDir}/編成-助っ人の候補.png` });
+  }
+  await normal.selectOption('');
+  await helper.selectOption('');
   await page.getByRole('button', { name: '編成を保存' }).click();
   assert.match(await page.locator('.team-title').textContent(), /0 \/ 6 枠/);
 

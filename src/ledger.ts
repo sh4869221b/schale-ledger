@@ -1,5 +1,5 @@
 import {
-  conflict, invalid, missing, object, progressFields, progressKeys, progressPatch, revisionId,
+  conflict, invalid, LedgerError, missing, object, progressFields, progressKeys, progressPatch, revisionId,
   studentFilters, studentId, teamFilters, teamId, teamMembers, teamMetadata,
 } from './rules';
 import type { Member, Mode, ProgressValues } from './rules';
@@ -15,6 +15,7 @@ export interface Student {
   defenseType: string | null;
   baseRarity: number | null;
   isLimited: boolean | null;
+  announcementId: number | null;
 }
 
 type StudentRow = Omit<Student, 'isLimited'> & { isLimited: number | null };
@@ -42,7 +43,7 @@ type TeamRow = TeamInfo & {
 };
 
 const studentColumns = `s.id, s.name, s.reading, s.school, s.role, s.position, s.attack_type AS attackType,
-  s.defense_type AS defenseType, s.base_rarity AS baseRarity, s.is_limited AS isLimited`;
+  s.defense_type AS defenseType, s.base_rarity AS baseRarity, s.is_limited AS isLimited, s.announcement_id AS announcementId`;
 const progressColumns = progressKeys.map(key => `p.${progressFields[key].column} AS "${key}"`).join(', ');
 const teamColumns = `t.id, t.name, t.mode, t.memo, t.revision, t.created_at AS createdAt, t.updated_at AS updatedAt`;
 const teamDetailSql = `SELECT ${teamColumns}, m.position_index AS positionIndex, m.student_id AS studentId,
@@ -53,7 +54,7 @@ const teamDetailSql = `SELECT ${teamColumns}, m.position_index AS positionIndex,
 function studentOf(row: StudentRow): Student {
   return { id: row.id, name: row.name, reading: row.reading, school: row.school, role: row.role, position: row.position,
     attackType: row.attackType, defenseType: row.defenseType, baseRarity: row.baseRarity,
-    isLimited: row.isLimited === null ? null : row.isLimited === 1 };
+    isLimited: row.isLimited === null ? null : row.isLimited === 1, announcementId: row.announcementId };
 }
 
 type DetailRow = StudentRow & ProgressValues & { updatedAt: string | null };
@@ -187,35 +188,60 @@ export class Ledger {
     const members = teamMembers(data.members);
     const existing = await this.getTeam(value);
     const values = teamMetadata({ name: data.name, mode: data.mode, memo: data.memo ?? null });
-    const sameMembers = existing.members.length === members.length && existing.members.every((member, index) =>
-      member.positionIndex === members[index].positionIndex && member.studentId === members[index].studentId &&
-      member.isSupport === members[index].isSupport);
-    if (sameMembers && existing.name === values.name && existing.mode === values.mode && existing.memo === values.memo) return existing;
-    if (existing.revision !== revision) throw conflict();
-    if (members.length) {
-      const ids = [...new Set(members.map(member => member.studentId))];
-      const { results } = await this.db.prepare(`SELECT id FROM students WHERE id IN (${ids.map(() => '?').join(', ')})`)
-        .bind(...ids).all<{ id: string }>();
-      if (results.length !== ids.length) throw invalid('編成に収録されていない生徒が指定されています。', 'members');
-    }
-
+    const unchanged = (team: TeamDetail) =>
+      team.name === values.name && team.mode === values.mode && team.memo === values.memo &&
+      team.members.length === members.length && team.members.every((member, index) =>
+        member.positionIndex === members[index].positionIndex && member.studentId === members[index].studentId &&
+        member.isSupport === members[index].isSupport);
+    const ids = [...new Set(members.map(member => member.studentId))];
+    const required = [...new Set(members.filter(member => !member.isSupport).map(member => member.studentId))];
+    const marks = (values: string[]) => values.map(() => '?').join(', ');
+    const rosterCount = ids.length ? `(SELECT count(*) FROM students WHERE id IN (${marks(ids)}))` : '0';
+    const ownedCount = required.length ? `(SELECT count(*) FROM progress WHERE account_id=? AND student_id IN (${marks(required)}))` : '0';
+    const ownedArgs = required.length ? [this.accountId, ...required] : [];
+    const eligibility = this.db.prepare(`SELECT ${rosterCount} AS roster, ${ownedCount} AS owned`).bind(...ids, ...ownedArgs);
+    const assertEligible = (result: { roster: number; owned: number }) => {
+      if (result.roster !== ids.length) throw invalid('編成に収録されていない生徒が指定されています。', 'members');
+      if (result.owned !== required.length) {
+        throw new LedgerError(400, 'STUDENT_NOT_OWNED', '通常枠には、自分が育成登録した生徒を選んでください。', { field: 'members' });
+      }
+    };
+    type TeamBatchRow = TeamRow & { roster: number; owned: number };
     const id = existing.id;
+    const detail = this.db.prepare(teamDetailSql).bind(this.accountId, id);
+    if (unchanged(existing)) {
+      const [check, snapshot] = await this.db.batch<TeamBatchRow>([eligibility, detail]);
+      const latest = teamOf(snapshot.results);
+      if (!unchanged(latest)) throw conflict();
+      assertEligible(check.results[0]);
+      return latest;
+    }
+    if (existing.revision !== revision) throw conflict();
+
     const next = crypto.randomUUID();
     const owner = [id, this.accountId, next];
     const update = this.db.prepare(`UPDATE teams SET name=?, mode=?, memo=?, revision=?, updated_at=?
-      WHERE id=? AND account_id=? AND revision=?`)
-      .bind(values.name, values.mode, values.memo, next, new Date().toISOString(), id, this.accountId, revision);
+      WHERE id=? AND account_id=? AND revision=? AND ${rosterCount}=? AND ${ownedCount}=?`)
+      .bind(values.name, values.mode, values.memo, next, new Date().toISOString(), id, this.accountId, revision,
+        ...ids, ids.length, ...ownedArgs, required.length);
     const remove = this.db.prepare(`DELETE FROM team_slots WHERE team_id=(SELECT id FROM teams
       WHERE id=? AND account_id=? AND revision=?)`).bind(...owner);
-    const inserts = members.map(member => this.db.prepare(`INSERT INTO team_slots(team_id, position_index, student_id, is_support)
-      SELECT id, ?, ?, ? FROM teams WHERE id=? AND account_id=? AND revision=?`)
-      .bind(member.positionIndex, member.studentId, Number(member.isSupport), ...owner));
-    const results = await this.db.batch<TeamRow>([update, remove, ...inserts,
-      this.db.prepare(teamDetailSql).bind(this.accountId, id)]);
-    if (!results[0].meta.changes) {
-      if (!results.at(-1)?.results.length) throw missing();
+    const inserts = members.map(member => {
+      const isSupport = Number(member.isSupport);
+      // A missing required progress row must abort the batch rather than leave a slot empty.
+      return this.db.prepare(`INSERT INTO team_slots(team_id, position_index, student_id, is_support)
+        SELECT id, ?, CASE WHEN ?=1 OR EXISTS (SELECT 1 FROM progress
+          WHERE account_id=teams.account_id AND student_id=?) THEN ? ELSE NULL END, ?
+        FROM teams WHERE id=? AND account_id=? AND revision=?`)
+        .bind(member.positionIndex, isSupport, member.studentId, member.studentId, isSupport, ...owner);
+    });
+    const results = await this.db.batch<TeamBatchRow>([eligibility, update, remove, ...inserts, detail]);
+    const latest = teamOf(results.at(-1)?.results ?? []);
+    if (!results[1].meta.changes) {
+      if (latest.revision !== revision) throw conflict();
+      assertEligible(results[0].results[0]);
       throw conflict();
     }
-    return teamOf(results.at(-1)?.results ?? []);
+    return latest;
   }
 }

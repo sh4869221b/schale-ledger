@@ -11,6 +11,31 @@ const assets: Record<string, [string, string]> = {
   '/assets/ledger.js': [browserScript, 'text/javascript; charset=utf-8'],
 };
 
+function teamFormSlots(form: Record<string, string>) {
+  // Pages opened before the release still submit the previous form.
+  const previousForm = !Object.keys(form).some(key => key.startsWith('kind_'));
+  const normalized = { ...form };
+  const members = Array.from({ length: slotCount }, (_, positionIndex) => {
+    const kindKey = `kind_${positionIndex}`;
+    const ownedKey = `owned_${positionIndex}`;
+    const helperKey = `helper_${positionIndex}`;
+    if (previousForm) {
+      const previousKey = `student_${positionIndex}`;
+      if (!Object.hasOwn(form, previousKey)) throw invalid('編成画面を開き直してから保存してください。');
+      const isSupport = form[`support_${positionIndex}`] === 'yes';
+      normalized[kindKey] = isSupport ? 'support' : 'owned';
+      normalized[isSupport ? helperKey : ownedKey] = form[previousKey];
+    }
+    const kind = normalized[kindKey];
+    if (kind !== 'owned' && kind !== 'support') throw invalid('編成の枠の種類を選んでください。');
+    const isSupport = kind === 'support';
+    const studentId = normalized[isSupport ? helperKey : ownedKey];
+    if (studentId === undefined) throw invalid('編成画面を開き直してから保存してください。');
+    return { positionIndex, studentId, isSupport };
+  }).filter(member => member.studentId);
+  return { members, normalized };
+}
+
 async function browser(request: Request, url: URL, ledger: Ledger) {
   const { pathname: path } = url;
   const { method } = request;
@@ -78,16 +103,14 @@ async function browser(request: Request, url: URL, ledger: Ledger) {
     if (method === 'POST') {
       trustedOrigin(request);
       const form = await formInput(request);
-      const members = Array.from({ length: slotCount }, (_, positionIndex) => ({
-        positionIndex, studentId: form[`student_${positionIndex}`], isSupport: form[`support_${positionIndex}`] === 'yes',
-      })).filter(member => member.studentId);
+      const { members, normalized } = teamFormSlots(form);
       try {
         await ledger.saveTeam(id, { name: form.name, mode: form.mode, memo: form.memo ?? null, revision: form.revision, members });
         return redirect(`/teams/${encodeURIComponent(id)}?saved=1#lineup`);
       } catch (error) {
         if (!(error instanceof LedgerError) || ![400, 409].includes(error.status)) throw error;
         const [saved, students] = await Promise.all([ledger.getTeam(id), ledger.listStudents({})]);
-        return html(teamPage(saved, students, form, { message: error.message, conflict: error.code === 'CONFLICT' }), error.status);
+        return html(teamPage(saved, students, normalized, { message: error.message, conflict: error.code === 'CONFLICT' }), error.status);
       }
     }
   }
@@ -102,7 +125,7 @@ export function createWorker(authenticate = accessAuthenticator()) {
       if (path === '/healthz' && request.method === 'GET') {
         try {
           await env.DB.prepare('SELECT id FROM students LIMIT 1').first();
-          return json({ status: 'ok', release: '2.0.0' });
+          return json({ status: 'ok', release: '2.1.0' });
         } catch {
           console.error(JSON.stringify({ code: 'DB_UNAVAILABLE', entry: 'health' }));
           return json({ status: 'unavailable' }, 503);

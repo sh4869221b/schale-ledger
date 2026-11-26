@@ -7,3 +7,21 @@ for (const element of document.querySelectorAll('time[datetime]')) {
   const time = new Date(element.dateTime);
   if (!Number.isNaN(time.valueOf())) element.textContent = dateFormat.format(time);
 }
+
+const searchValue = value => value.normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g, character =>
+  String.fromCharCode(character.charCodeAt(0) - 0x60)).replace(/\s+/g, '');
+
+for (const field of document.querySelectorAll('[data-candidate-search]')) {
+  const select = document.getElementById(field.dataset.candidateSearch);
+  if (!(select instanceof HTMLSelectElement)) continue;
+  const catalog = Array.from(select.options);
+  field.parentElement.hidden = false;
+  field.addEventListener('input', () => {
+    const value = select.value;
+    const query = searchValue(field.value);
+    const options = catalog.filter(option => !option.value || option.value === value ||
+      searchValue(option.textContent).includes(query));
+    select.replaceChildren(...options.map(option => option.cloneNode(true)));
+    select.value = value;
+  });
+}

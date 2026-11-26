@@ -134,7 +134,10 @@ export function studentsList(students: StudentSummary[], schools: string[], filt
     ${students.length ? `<ul class="student-grid">${pageStudents.map(student => `<li>
       <a class="student-card" href="/students/${encodeURIComponent(student.id)}"><div class="student-card-top">
       ${mark(student)}<div class="student-name"><h3>${escape(student.name)}</h3><span>${escape(student.school)}</span></div>${icon('arrow')}</div>
-      <div class="tags">${chip(labelFor(roles, student.role))}${chip(labelFor(attacks, student.attackType), student.attackType === 'mystic' ? 'blue' : '')}</div>
+      ${student.role || student.attackType ? `<div class="tags">
+        ${student.role ? chip(labelFor(roles, student.role)) : ''}
+        ${student.attackType ? chip(labelFor(attacks, student.attackType), student.attackType === 'mystic' ? 'blue' : '') : ''}
+      </div>` : ''}
       <div class="student-card-bottom">${status(student.progress !== null)}
       ${student.progress?.level != null ? `<span>Lv ${numberText.format(student.progress.level)}</span>` : ''}
       ${student.progress?.rarity != null ? `<span>★ ${student.progress.rarity}</span>` : ''}</div>
@@ -164,7 +167,9 @@ export function studentPage(student: StudentDetail, form?: FormValues, error?: F
   return layout(student.name, 'students', `${back('生徒一覧へ', '/students')}
     <section class="student-banner"><div class="student-identity">${mark(student, true)}<div><h1>${escape(student.name)}</h1>
     <p>${escape(student.school)}</p></div>${status(data !== null)}</div>
-    <dl class="facts">${details.map(([key, value]) => `<div><dt>${key}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl></section>
+    <dl class="facts">${details.map(([key, value]) => `<div><dt>${key}</dt><dd>${escape(value)}</dd></div>`).join('')}</dl>
+    ${student.announcementId ? `<a class="source-link" href="https://bluearchive.jp/news/newsJump/${student.announcementId}" rel="noreferrer">公式告知 ${icon('arrow')}</a>` : ''}
+    </section>
     <form method="post" action="/students/${encodeURIComponent(student.id)}/progress" class="editor" id="progress">
       <div class="editor-title"><div><h2>育成記録</h2><p>記録したい項目を入力できます。</p></div>${data ? `<span class="updated">更新 ${date(data.updatedAt)}</span>` : ''}</div>
       ${saved ? notice('育成記録を保存しました。') : ''}${feedback(error)}
@@ -204,16 +209,46 @@ export function teamsList(teams: TeamSummary[], mode?: string, form?: FormValues
 
 export function teamPage(team: TeamDetail, students: StudentSummary[], form?: FormValues, error?: Feedback, saved = false) {
   const url = `/teams/${encodeURIComponent(team.id)}`;
+  const allOptions = Object.fromEntries(students.map(student => [student.id, student.name]));
+  const owned = students.filter(student => student.progress !== null);
+  const ownedOptions = Object.fromEntries(owned.map(student => [student.id, student.name]));
   const slots = Array.from({ length: slotCount }, (_, index) => {
     const member = team.members.find(row => row.positionIndex === index);
-    const chosen = form ? form[`student_${index}`] : member?.studentId;
-    const isSupport = form ? form[`support_${index}`] === 'yes' : member?.isSupport;
-    const studentOptions = Object.fromEntries(students.map(student => [student.id, student.name]));
-    if (chosen && !Object.hasOwn(studentOptions, chosen)) studentOptions[chosen] = '未収録の生徒';
-    return `<div class="slot">
-      <div class="field"><label for="slot-${index}">枠 ${index + 1}</label><select id="slot-${index}" name="student_${index}">${options(studentOptions, chosen, '空き枠')}</select></div>
-      <label class="checkbox"><input type="checkbox" name="support_${index}" value="yes"${isSupport ? ' checked' : ''}>
-      <span>助っ人<span class="sr-only">（枠 ${index + 1}）</span></span></label></div>`;
+    const isSupport = form ? form[`kind_${index}`] === 'support' : member?.isSupport === true;
+    const selectedOwned = form ? form[`owned_${index}`] : !member?.isSupport ? member?.studentId : undefined;
+    const selectedHelper = form ? form[`helper_${index}`] : member?.isSupport ? member.studentId : undefined;
+    const invalidOwned = !!selectedOwned && member?.isSupport === false &&
+      member.studentId === selectedOwned && !Object.hasOwn(ownedOptions, selectedOwned);
+    const ownedChoices = invalidOwned ? {
+      [selectedOwned]: `${Object.hasOwn(allOptions, selectedOwned) ? allOptions[selectedOwned] : '未収録の生徒'}（育成未登録）`,
+      ...ownedOptions,
+    } : ownedOptions;
+    const helperChoices = selectedHelper && !Object.hasOwn(allOptions, selectedHelper) ?
+      { [selectedHelper]: '未収録の生徒', ...allOptions } : allOptions;
+    const repairUrl = invalidOwned && Object.hasOwn(allOptions, selectedOwned) ?
+      `/students/${encodeURIComponent(selectedOwned)}#progress` : '/students?state=unrecorded';
+
+    return `<fieldset class="slot" data-slot><legend>枠 ${index + 1}</legend>
+      <div class="slot-type">
+        <label><input type="radio" name="kind_${index}" aria-label="通常枠（枠 ${index + 1}）" value="owned"${isSupport ? '' : ' checked'}>
+          <span>${icon('check')}通常枠<span class="sr-only">（枠 ${index + 1}）</span></span></label>
+        <label><input type="radio" name="kind_${index}" aria-label="助っ人（枠 ${index + 1}）" value="support"${isSupport ? ' checked' : ''}>
+          <span>${icon('students')}助っ人<span class="sr-only">（枠 ${index + 1}）</span></span></label>
+      </div>
+      <div class="slot-candidates owned-candidates">
+        <div class="slot-heading"><label for="owned-${index}">所持生徒 ${index + 1}</label>${chip('所持のみ', 'mint')}</div>
+        <select id="owned-${index}" name="owned_${index}"${invalidOwned ? ` aria-describedby="repair-${index}"` : ''}>
+          ${options(ownedChoices, selectedOwned, '空き枠')}</select>
+        ${invalidOwned ? `<p class="slot-repair" id="repair-${index}" role="status">この生徒は育成未登録です。<a href="${repairUrl}">育成を登録</a>するか、枠を変更してください。</p>` : ''}
+        ${!owned.length && !invalidOwned ? '<a class="slot-link" href="/students?state=unrecorded">育成を登録する</a>' : ''}
+      </div>
+      <div class="slot-candidates support-candidates">
+        <div class="slot-heading"><label for="helper-${index}">助っ人生徒 ${index + 1}</label>${chip('全生徒', 'lilac')}</div>
+        <div class="candidate-search" hidden><label class="sr-only" for="helper-search-${index}">助っ人を検索 ${index + 1}</label>
+          <input type="search" id="helper-search-${index}" data-candidate-search="helper-${index}" placeholder="生徒名で絞る" maxlength="100"></div>
+        <select id="helper-${index}" name="helper_${index}">${options(helperChoices, selectedHelper, '空き枠')}</select>
+      </div>
+    </fieldset>`;
   }).join('');
 
   return layout(team.name, 'teams', `${back('編成一覧へ', '/teams')}
@@ -226,7 +261,11 @@ export function teamPage(team: TeamDetail, students: StudentSummary[], form?: Fo
         <label>編成名<input name="name" maxlength="80" required value="${escape(form?.name ?? team.name)}"></label>
         <div class="field"><label for="team-mode">モード</label><select id="team-mode" name="mode">${options(modes, form?.mode ?? team.mode)}</select></div>
       </div><div class="field memo"><label for="team-memo">メモ</label><textarea id="team-memo" name="memo" maxlength="2000" rows="3" placeholder="想定する敵や編成の狙い">${escape(form?.memo ?? team.memo)}</textarea></div></fieldset>
-      <fieldset><legend>メンバー</legend><div class="slot-grid">${slots}</div></fieldset>
+      <fieldset><legend>メンバー</legend>
+        <div class="team-candidate-summary"><span class="chip mint">${icon('check')}所持 ${numberText.format(owned.length)} 件</span>
+        <span class="chip lilac">${icon('students')}助っ人候補 ${numberText.format(students.length)} 件</span>
+        <a class="slot-link" href="/students?state=unrecorded">育成を登録する</a></div>
+        <div class="slot-grid">${slots}</div></fieldset>
       <div class="actions"><button class="button primary" type="submit">${icon('check')}編成を保存</button></div>
     </form>`);
 }
