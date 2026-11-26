@@ -1,49 +1,24 @@
-# シャーレ育成手帳 (`schale-ledger`)
+# シャーレ育成手帳
 
-生徒育成情報と編成情報を管理する、Cloudflare Workers + D1 ベースの SvelteKit アプリです。
+『ブルーアーカイブ』の日本語の個人用育成・編成台帳です。生徒を名前や属性で探し、利用者ごとの育成状況と総力戦・合同火力演習の6枠の編成を記録できます。
 
-> Legacy Pages / Neon / Hyperdrive implementation has been removed from the active runtime path.
+- [設計と受け入れ条件](docs/design-v2.md)
+- [日本版の初期生徒マスタ26件と出典](docs/student-data.md)
+- [Cloudflare へのデプロイと切り戻し](docs/deploy.md)
 
-## 構成
-- `apps/web`: SvelteKit（UI + Workers server routes）
-- `packages/core`: ビジネスルール / validation
-- `packages/db`: Drizzle schema / D1 migrations / repositories
-- `packages/ui`: Tailwind v4 / shared UI primitives
-- `infrastructure/wrangler`: deploy / cutover 運用メモ
-- `docs/spec`: 仕様書
+## 開発とテスト
 
-## デプロイ方針
-- primary deploy path: **Cloudflare Workers Git integration**
-- branch mapping: `dev` -> dev, `main` -> prod
-- GitHub Actions: **CI-only**
-- D1 migrations: **manual**
+Node.js 24 と npm を使います。
 
-## 必須確認コマンド
-```bash
-bun install
-bun test
-bun run check
-bun run build
-bun run db:migrate:local
-bun run db:migrate:local
+```sh
+npm ci
+npm exec -- playwright-core install chromium
+npm run check
+npm test
+npm run db:migrate:local
+npm run dev
 ```
 
-## 開発
-```bash
-bun install
-bun run dev
-```
+標準の開発 Worker は `http://localhost:3000/healthz` で確認できます。認証後の画面は、テスト専用の署名鍵と使い捨ての D1 を使って `npm test` で検証します。リリースと同じ認証経路で手動確認する場合は、Cloudflare Access を設定したプレビューを使用してください。開発機に Chromium がある場合は `PLAYWRIGHT_CHROMIUM_EXECUTABLE` にパスを設定できます。
 
-## マイグレーション
-```bash
-bun run db:migrate:local
-bun run --cwd ./packages/db migrate:remote:dev
-bun run --cwd ./packages/db migrate:remote:prod
-```
-
-Cloudflare Access / D1 / Workers の詳細は `docs/cloudflare-setup.md` と `infrastructure/wrangler/README.md` を参照してください。
-
-## 仕様
-実装前提の正本は `docs/superpowers/specs/` を参照してください。
-
-`docs/spec/` は旧 Pages/Neon 構成の凍結資料として扱います。
+`src/index.ts` が画面とフォームを処理し、`src/ledger.ts` と `src/rules.ts` が永続化と業務ルールを扱います。D1 マイグレーションは `migrations/` にあります。GitHub Actions は CI を実行します。
