@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,9 +19,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm exec -- playwright-core install --with-deps chromium
       - run: npm run check
-      - run: npm test
+      - name: Browser and D1 tests
+        run: PLAYWRIGHT_CHROMIUM_EXECUTABLE="$(command -v google-chrome)" npm test
       - run: npm run db:migrate:local
       - run: npm run db:migrate:local
       - run: npm exec -- wrangler deploy --dry-run
